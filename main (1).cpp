@@ -26,6 +26,15 @@ struct Net {
     std::vector<int> connectedComponents;
 };
 
+// clearing the outupt of the grid
+void clearGrid(int ROWS)
+{
+    // Clear the grid portion of the console
+    for (int i = 0; i < ROWS; ++i) {
+        std::cout << "\033[1A\033[2K";
+    }
+}
+
 // function that prints the grid out
 void printGrid(const std::vector<Cell>& initialPlacement, int numRows, int numCols, int cellWidth) {
     std::vector<std::vector<int>> grid(numRows, std::vector<int>(numCols, -1));
@@ -132,6 +141,7 @@ void performPlacement(  std::vector<Cell>& currentPlacement, const std::vector<N
 
     cout << endl;
     auto startTime = std::chrono::high_resolution_clock::now();
+    int counter =0; 
     while (currentTemperature > finalTemperature) {
         int movesPerTemperature = 10 * numCells;
 
@@ -186,12 +196,26 @@ void performPlacement(  std::vector<Cell>& currentPlacement, const std::vector<N
 
         // Cool down the temperature
         currentTemperature *= coolingRate;
-        cout << "\r                        current temp: " << currentTemperature << std::flush;
+        
+        // current time 
+        auto endTime = chrono::high_resolution_clock::now();
+        auto duration = chrono::duration_cast<chrono::milliseconds>(endTime - startTime).count();
+        
+        if (counter)
+        clearGrid(numRows+4);
+        
+        cout << "\r                        iteration: " << counter << "    current temp: " << currentTemperature  << "         elapsed time: " << duration << std::flush;
+        printGrid(currentPlacement, numRows, numCols, 4);
+        
+        counter ++; 
     }
     cout << endl;
     auto endTime = chrono::high_resolution_clock::now();
     auto duration = chrono::duration_cast<chrono::milliseconds>(endTime - startTime).count();
+    
+    
     cout << "                        Execution time: " << duration << " milliseconds" << endl;
+     
 
 }
 
@@ -201,22 +225,12 @@ int main(void) {
     int numCells, numNets, numRows, numCols;
     int cellWidth = 4;
 
-    std::ifstream inputFile("t2.txt");
+    std::ifstream inputFile("d3.txt");
     if (inputFile.is_open()) {
         inputFile >> numCells >> numNets >> numRows >> numCols;
 
         std::vector<Cell> cells;
         cells.reserve(numCells);
-        // Read cell information
-        // for (int i = 0; i < numCells; ++i) {
-        //     int cellNum = i;
-        //     // inputFile >> cellNum;
-
-        //     Cell cell;
-        //     cell.number = cellNum;
-        //     cells.push_back(cell);
-        // }
-
         std::vector<Net> nets;
         nets.reserve(numNets);
         // Read net information
@@ -239,21 +253,7 @@ int main(void) {
         // Perform the initial random placement
         vector<Cell> initialPlacement = performInitialPlacement(numRows, numCols, numCells);
         // Display the grid
-        
         printGrid(initialPlacement, numRows, numCols, cellWidth);
-
-        // checking the nets.
-        /*
-        // cout << "number of nets =" << nets.size();
-        // for (int i =0; i<nets.size(); i++)
-        // {
-        //     cout << endl << " net (" << i << ") of size (" << nets[i].connectedComponents.size() << ") and components:"; 
-        //     for (int j = 0; j<nets[i].connectedComponents.size(); j++)
-        //     {
-        //         cout << nets[i].connectedComponents[j] << " "; 
-        //     }
-        // }
-        */
 
         // Calculate the initial and final temperatures based on the given formula
         double total_wire_length = calculateTotalWirelength(initialPlacement, nets);
@@ -262,41 +262,15 @@ int main(void) {
             cout << endl << " inital temperature = " << total_wire_length << " * 500 = " <<  initialTemperature;
         double finalTemperature = 5e-6 * total_wire_length / numNets;
             cout << endl << " final temperature is: " << finalTemperature;
-
+        
         // Define the cooling rate
         double coolingRate = 0.95;
-
+        
         // Perform the simulated annealing-based placement
         vector<Cell>finalPlacement = initialPlacement;
         performPlacement(finalPlacement, nets, initialTemperature, finalTemperature, coolingRate, numRows, numCols);
         
-        // cellWidth = 4; 
-        // for (int i = 0; i < finalPlacement.size(); i++)
-        // {
-        //     cout << endl << " cell " << i << " of row (" << finalPlacement[i].row << ") of col (" << finalPlacement[i].column << ") .";
-        // }
-        // cout << endl << "numRows =" << numRows << "    numCols =" << numCols << " cellWidth =" << cellWidth ;
-        printGrid(finalPlacement, numRows, numCols, cellWidth);
         
-        // Save the final placement and wirelength to an output file
-        // std::ofstream outputFile("output.txt");
-        // if (outputFile.is_open()) {
-        //     // Print the final placement
-        //     for (const Cell& cell : initialPlacement) {
-        //         outputFile << "-- " << cell.number << " ";
-        //         outputFile << cell.row << " ";
-        //         outputFile << cell.column << std::endl;
-        //     }
-
-        //     // Print the final wirelength
-        //     int totalWirelength = calculateTotalWirelength(initialPlacement, nets);
-        //     outputFile << "Total wire length = " << totalWirelength << std::endl;
-
-        //     outputFile.close();
-        // } else {
-        //     std::cout << "Failed to open output file." << std::endl;
-        //     return 1; // Exit the program with an error code
-        // }
     } else {
         std::cout << "Failed to open input file." << std::endl;
         return 1; // Exit the program with an error code
